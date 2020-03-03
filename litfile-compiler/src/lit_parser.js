@@ -1,4 +1,4 @@
-const cheerio = require("cheerio");
+import cheerio from './cheerio_wrapper.js';
 
 export default class LitParser {
     construct() {
@@ -17,7 +17,7 @@ export default class LitParser {
     }
 
     parse(document) {
-        const $ = cheerio.load(document);
+        const $ = cheerio.load(document, {decodeEntities: false});
 
         var elementNode = $("element");
         var cssNode = $("style");

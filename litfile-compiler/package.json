@@ -1,6 +1,6 @@
 {
   "name": "litfile-compiler",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Compiles .lit files into .js LitElement Web Components",
   "main": "./src/index.js",
   "module": "./src/main.js",
