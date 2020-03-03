@@ -1,0 +1,20 @@
+{
+  "name": "litfile-compiler",
+  "version": "0.1.0",
+  "description": "Compiles .lit files into .js LitElement Web Components",
+  "main": "./src/index.js",
+  "module": "./src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "esm": "^3.2.25",
+    "recast": "^0.18.7"
+  },
+  "esm": {
+    "cjs": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+    "name": "litfile",
+    "displayName": "litfile",
+    "description": "Adds support for .lit files in HTML",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.42.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "litfile",
+                "aliases": [
+                    "Litfile",
+                    "litfile"
+                ],
+                "extensions": [
+                    ".litfile",
+                    ".lit"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "litfile",
+                "scopeName": "source.litfile",
+                "path": "./syntaxes/litfile.tmLanguage.json"
+            }
+        ]
+    }
+}

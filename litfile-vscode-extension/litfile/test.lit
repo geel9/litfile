@@ -1,0 +1,18 @@
+<element name="time-stamp">
+    <property></property>
+</element>
+
+<template>
+    <div id="${this.id}">
+        ${this.arithmetic ? "I am gay" : "You are gay son"}
+    </div>
+
+    var blah = "\n";
+</template>
+
+<script>
+    
+</script>
+
+<style>
+</style>
