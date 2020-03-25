@@ -1,7 +1,7 @@
 {
     "name": "litfile",
     "displayName": "litfile",
-    "description": "Adds support for .lit files in HTML",
+    "description": "Adds support for .lit files in VSCode",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.42.0"
@@ -9,10 +9,18 @@
     "categories": [
         "Programming Languages"
     ],
+    "activationEvents": [
+        "onLanguage:javascript",
+        "onLanguage:javascriptreact",
+        "onLanguage:typescript",
+        "onLanguage:typescriptreact",
+        "onLanguage:litfile"
+    ],
+    "main": "./out/index.js",
     "contributes": {
         "languages": [
             {
-                "id": "litfile",
+                "id": "html",
                 "aliases": [
                     "Litfile",
                     "litfile"
@@ -26,10 +34,21 @@
         ],
         "grammars": [
             {
-                "language": "litfile",
+                "language": "html",
                 "scopeName": "source.litfile",
-                "path": "./syntaxes/litfile.tmLanguage.json"
+                "path": "./syntaxes/litfile.tmLanguage.json",
+                "embeddedLanguages": {
+                    "meta.embedded.block.html": "html",
+                    "meta.tag": "html",
+                    "source.js": "javascript",
+                    "source.css": "css",
+                    "litfile.template.string.interpolated": "javascript"
+                }
             }
         ]
+    },
+    "devDependencies": {
+        "typescript-lit-html-plugin": "^0.9.0",
+        "vscode": "^1.1.36"
     }
 }
