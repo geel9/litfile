@@ -19,7 +19,13 @@
         "onLanguage:litfile",
         "onCommand:litfile.preview"
     ],
-    "main": "./out/index.js",
+    "main": "./out/extension.js",
+    "scripts": {
+        "vscode:prepublish": "webpack --mode production",
+        "webpack": "webpack --mode development",
+        "webpack-dev": "webpack --mode development --watch",
+        "test-compile": "tsc -p ./"
+    },
     "contributes": {
         "html": {
             "customData": [
@@ -62,8 +68,12 @@
         ]
     },
     "devDependencies": {
+        "ts-loader": "^6.2.2",
+        "typescript": "^3.8.3",
         "typescript-lit-html-plugin": "^0.9.0",
-        "vscode": "^1.1.36"
+        "vscode": "^1.1.36",
+        "webpack": "^4.42.1",
+        "webpack-cli": "^3.3.11"
     },
     "dependencies": {
         "litfile-compiler": "^0.1.3"
