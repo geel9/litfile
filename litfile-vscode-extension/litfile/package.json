@@ -3,6 +3,8 @@
     "displayName": "litfile",
     "description": "Adds support for .lit files in VSCode",
     "version": "0.0.1",
+    "publisher": "geel",
+    "repository": "https://github.com/geel9/litfile/tree/master/litfile-vscode-extension/litfile",
     "engines": {
         "vscode": "^1.42.0"
     },
@@ -14,10 +16,22 @@
         "onLanguage:javascriptreact",
         "onLanguage:typescript",
         "onLanguage:typescriptreact",
-        "onLanguage:litfile"
+        "onLanguage:litfile",
+        "onCommand:litfile.preview"
     ],
     "main": "./out/index.js",
     "contributes": {
+        "html": {
+            "customData": [
+                "./contributes/litfile.html-data.json"
+            ]
+        },
+        "commands": [
+            {
+                "command": "litfile.preview",
+                "title": "Preview Compiled Litfile"
+            }
+        ],
         "languages": [
             {
                 "id": "html",
@@ -36,7 +50,7 @@
             {
                 "language": "html",
                 "scopeName": "source.litfile",
-                "path": "./syntaxes/litfile.tmLanguage.json",
+                "path": "./contributes/litfile.tmLanguage.json",
                 "embeddedLanguages": {
                     "meta.embedded.block.html": "html",
                     "meta.tag": "html",
@@ -50,5 +64,8 @@
     "devDependencies": {
         "typescript-lit-html-plugin": "^0.9.0",
         "vscode": "^1.1.36"
+    },
+    "dependencies": {
+        "litfile-compiler": "^0.1.3"
     }
 }

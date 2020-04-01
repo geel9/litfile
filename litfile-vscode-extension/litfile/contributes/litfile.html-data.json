@@ -1,0 +1,141 @@
+{
+    "version": 1.1,
+    "tags": [
+        {
+            "name": "element",
+            "description": "The element element",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "The tag name of the element; must include a dash (-)"
+                },
+                {
+                    "name": "type",
+                    "description": "The JS class name for your created element"
+                },
+                {
+                    "name": "base",
+                    "description": "The base classname for your element; defaults to 'LitElement'"
+                }
+            ]
+        },
+        {
+            "name": "property",
+            "description": "A defined property for your element",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "The name of your property in the produced JS class."
+                },
+                {
+                    "name": "type",
+                    "description": "The JS type of the property",
+                    "values": [
+                        {
+                            "name": "String"
+                        },
+                        {
+                            "name": "Array"
+                        },
+                        {
+                            "name": "Number"
+                        },
+                        {
+                            "name": "Boolean"
+                        },
+                        {
+                            "name": "Object"
+                        }
+                    ]
+                },
+                {
+                    "name": "default",
+                    "description": "The default value of the property. This is required, and is parsed as JavaScript."
+                },
+                {
+                    "name": "attribute",
+                    "description": "The corresponding HTML attribute name. Will be auto-set from the property name if not specified. If false, no attribute will be made."
+                },
+                {
+                    "name": "reflect",
+                    "description": "If present, setting the property will change the HTML element's attribute."
+                }
+            ]
+        },
+        {
+            "name": "prop",
+            "description": "A defined property for your element",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "The name of your property in the produced JS class."
+                },
+                {
+                    "name": "type",
+                    "description": "The JS type of the property",
+                    "values": [
+                        {
+                            "name": "String"
+                        },
+                        {
+                            "name": "Array"
+                        },
+                        {
+                            "name": "Number"
+                        },
+                        {
+                            "name": "Boolean"
+                        },
+                        {
+                            "name": "Object"
+                        }
+                    ]
+                },
+                {
+                    "name": "default",
+                    "description": "The default value of the property. This is required, and is parsed as JavaScript."
+                },
+                {
+                    "name": "attribute",
+                    "description": "The corresponding HTML attribute name. Will be auto-set from the property name if not specified. If false, no attribute will be made."
+                },
+                {
+                    "name": "reflect",
+                    "description": "If present, setting the property will change the HTML element's attribute."
+                }
+            ]
+        },
+        {
+            "name": "script",
+            "description": "The JavaScript code for your element. Import, define your class, etc",
+            "attributes": [
+                {
+                    "name": "lang",
+                    "description": "The JS language used. If not provided, defaults to 'js'. Values other than js will be compiled using the specified language tools.",
+                    "values": [
+                        {
+                            "name": "js"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "style",
+            "description": "The stylesheet for your element",
+            "attributes": [
+                {
+                    "name": "lang",
+                    "description": "The CSS language used. If not provided, defaults to 'css'. Values other than css will be compiled using the specified language tools.",
+                    "values": [
+                        {
+                            "name": "css"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "globalAttributes": [],
+    "valueSets": []
+}
