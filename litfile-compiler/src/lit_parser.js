@@ -1,63 +1,47 @@
 import cheerio from './cheerio_wrapper.js';
+import { SplitLitfile } from './lit_splitter.js';
 
-export default class LitParser {
-    construct() {
-        this.properties = [];
-        this.element = {
-            name: null,
-            type: null,
-            base: "LitElement"
-        };
-        this.css = {
-            lang: "css",
-            contents: null
-        };
-        this.js = null;
-        this.templateString = null;
+function dom(document) {
+    return cheerio.load(document, { decodeEntities: false, withStartIndices: true, withEndIndices: true, recognizeSelfClosing: true });
+}
+
+export class LitParser {
+    parse(split, document) {
+        var ret = new ParsedLitfile(split);
+
+        this.parseElement(ret, document);
+        this.parseCSS(ret, document);
+        this.parseTemplate(ret, document);
+        this.parseScript(ret, document);
+
+        return ret;
     }
 
-    parse(document) {
-        const $ = cheerio.load(document, {decodeEntities: false});
+    parseElement(ret, document) {
+        var elemPart = ret.source.getPart("element");
 
+        if (!elemPart)
+            return;
+
+        var elementHTML = elemPart.getWholeText(document);
+        const $ = dom(elementHTML);
         var elementNode = $("element");
-        var cssNode = $("style");
-        var templateNode = $("template");
-        var scriptNode = $("script");
+        var propertyNodes = $(elementNode).find("prop, property");
 
-        var element = this.parseElement(elementNode, $);
-        var properties = this.parseProperties(elementNode, $);
-        var css = this.parseCSS(cssNode);
-        var template = this.parseTemplate(templateNode);
-        var script = this.parseScript(scriptNode);
+        var name = elementNode.attr("name");
+        var type = elementNode.attr("type");
+        var baseType = elementNode.attr("base");
 
-        return {
-            element: element,
-            properties: properties,
-            css: css,
-            template: template,
-            script: script
-        };
-    }
+        var properties = propertyNodes.toArray().map(p => this.parseProperty($(p)));
 
-    parseElement(element, $) {
-        if (element.length !== 1)
-            return null;
-
-        var name = element.attr("name");
-        var type = element.attr("type");
-        var baseType = element.attr("base");
-
-        return {
+        var partData = {
             name: name,
             type: type,
-            base: (typeof (baseType) === 'undefined' ? "LitElement" : baseType)
-        }
-    }
+            base: (typeof (baseType) === 'undefined' ? "LitElement" : baseType),
+            properties: properties
+        };
 
-    parseProperties(element, $) {
-        var propertyElems = element.find("property");
-
-        return propertyElems.toArray().map(p => this.parseProperty($(p)));
+        ret.addPart(new LitfileParsedPart("element", partData, elemPart));
     }
 
     parseProperty(property) {
@@ -89,31 +73,85 @@ export default class LitParser {
         return ret;
     }
 
-    parseCSS(css) {
-        if (css.length !== 1)
-            return null;
+    parseCSS(ret, document) {
+        var cssPart = ret.source.getPart("style");
 
-        var lang = css.attr("lang");
-        if (typeof (lang) === 'undefined')
-            lang = "css";
+        if (!cssPart)
+            return;
 
-        return {
+        var lang = cssPart.metadata.lang || "css";
+        var contents = cssPart.getContentText(document);
+
+        var partData = {
             lang: lang,
-            contents: css.html()
+            contents: contents
         };
+
+        ret.addPart(new LitfileParsedPart("style", partData, cssPart));
     }
 
-    parseTemplate(template) {
-        if (!template)
-            return null;
+    parseTemplate(ret, document) {
+        var templatePart = ret.source.getPart("template");
 
-        return template.html();
+        if (!templatePart)
+            return;
+
+        var lang = templatePart.metadata.lang || "lithtml";
+        var contents = templatePart.getContentText(document);
+
+        var partData = {
+            lang: lang,
+            contents: contents
+        };
+
+        ret.addPart(new LitfileParsedPart("template", partData, templatePart));
     }
 
-    parseScript(script) {
-        if (!script)
-            return null;
+    parseScript(ret, document) {
+        var jsPart = ret.source.getPart("script");
 
-        return script.html();
+        if (!jsPart)
+            return;
+
+        var lang = jsPart.metadata.lang || "javascript";
+        var contents = jsPart.getContentText(document);
+
+        var partData = {
+            lang: lang,
+            contents: contents
+        };
+
+        ret.addPart(new LitfileParsedPart("script", partData, jsPart));
+    }
+}
+
+export class ParsedLitfile extends SplitLitfile {
+    constructor(splitSource) {
+        super(splitSource.hash);
+        this.source = splitSource;
+    }
+
+    get elementName() {
+        return this.getPart("element").value.name;
+    }
+
+    get elementBaseType() {
+        return this.getPart("element").value.base || "LitElement";
+    }
+
+    get elementType() {
+        return this.getPart("element").value.type;
+    }
+
+    get elementProperties() {
+        return this.getPart("element").value.properties;
+    }
+}
+
+export class LitfileParsedPart {
+    constructor(name, data, sourcePart) {
+        this.name = name;
+        this.value = data;
+        this.source = sourcePart;
     }
 }

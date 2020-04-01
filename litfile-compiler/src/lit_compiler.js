@@ -1,22 +1,21 @@
 import { parse, print } from "recast";
 import { builders as b } from "ast-types";
 import { ASTHelper, ImportSpecifier, ImportStatement, makeThisAssignmentAST } from "./ast_helper";
+import { ParsedLitfile } from "./lit_parser";
+import { SplitLitfile } from "./lit_splitter";
 
-export default class LitCompiler {
+export class LitCompiler {
     get defaultCSS() {
         return "";
     }
 
     //todo: Move these to a ParsedLitfile class or something
     getBaseClass(parsed) {
-        if (!parsed.element || !parsed.element.base)
-            return "LitElement";
-
-        return parsed.element.base;
+        return parsed.elementBaseType;
     }
 
     getDefaultClassDeclaration(parsed) {
-        return `export default class ${parsed.element.type} extends ${this.getBaseClass(parsed)} {
+        return `export default class ${parsed.elementType} extends ${parsed.elementBaseType} {
         }`;
     }
 
@@ -30,10 +29,11 @@ export default class LitCompiler {
 
     /**
      * 
-     * @param {*} parsed The result from LitParser.parse(document)
+     * @param {ParsedLitfile} parsed The result from LitParser.parse(document)
      */
     compile(parsed) {
-        var js = parsed.script ? parsed.script : this.getDefaultJS(parsed);
+        var jsPart = parsed.getPart("script");
+        var js = jsPart ? jsPart.value.contents : this.getDefaultJS(parsed);
 
         const ast = new ASTHelper(parse(js).program);
 
@@ -53,10 +53,10 @@ export default class LitCompiler {
      * Ensure that the element class is declared and extends the proper base
      * 
      * @param {ASTHelper} ast T
-     * @param {*} parsed The result from LitParser.parse(document)
+     * @param {ParsedLitfile} parsed The result from LitParser.parse(document)
      */
     ensureClass(ast, parsed) {
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
 
         if (!elemClass) {
             elemClass = new ASTHelper(this.getDefaultClassDeclaration(parsed)).getBreadthFirstNode("ExportDefaultDeclaration");
@@ -64,7 +64,7 @@ export default class LitCompiler {
             return;
         }
 
-        var expectedBase = this.getBaseClass(parsed);
+        var expectedBase = parsed.elementBaseType;
         var baseClass = elemClass.path.get("superClass");
 
         if (!baseClass.value || expectedBase !== baseClass.value.name)
@@ -74,11 +74,11 @@ export default class LitCompiler {
     /**
      * Ensure that customElements.define is called 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     registerElement(ast, parsed) {
-        var elemName = parsed.element.name;
-        var elemType = parsed.element.type;
+        var elemName = parsed.elementName;
+        var elemType = parsed.elementType;
 
         var isDefined = false;
 
@@ -124,7 +124,7 @@ export default class LitCompiler {
      * Ensure that the requisite imports from LitElement are included.
      * 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     compileImports(ast, parsed) {
         var imports = ast.importStatements;
@@ -170,13 +170,14 @@ export default class LitCompiler {
      * Replaces the return value of an existing `statuc get styles()` function.
      * 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     injectCSS(ast, parsed) {
-        if (!parsed.css)
+        var cssPart = parsed.getPart("style");
+        if (!cssPart)
             return;
 
-        var templateStr = `css\`${parsed.css.contents}\``;
+        var templateStr = `css\`${cssPart.value.contents}\``;
         var templateAst = parse(templateStr).program.body[0];
 
         //Create a class so we can parse a "static get" method, and then replace its return statement.
@@ -199,7 +200,7 @@ export default class LitCompiler {
             });
         }
 
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
         elemClass.setClassMethod("styles", funcAst.node, "unshift");
     }
 
@@ -210,18 +211,19 @@ export default class LitCompiler {
      * If <template> is not provided, render() MUST be defined in your class in the .lit's <script> 
      * 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     injectRender(ast, parsed) {
-        var template = (parsed.template) ? parsed.template : this.defaultTemplate;
+        var templatePart = parsed.getPart("template");
+        var template = (templatePart) ? templatePart.value.contents : this.defaultTemplate;
         var literalStr = `html\`${template}\``;
         var literalAST = new ASTHelper(literalStr).getBreadthFirstNode("ExpressionStatement").node.expression;
 
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
         var renderMethod = ast.getMethodDefinition("render");
 
         //Don't override render() if the user specified it and didn't provide a <template/>
-        if (renderMethod !== null && !parsed.templateString)
+        if (renderMethod !== null && !templatePart)
             return;
 
         //Build the method manually and return the HTML AST
@@ -247,17 +249,17 @@ export default class LitCompiler {
      * 
      * 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     injectProperties(ast, parsed) {
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
         var constructor = ast.getMethodDefinition("constructor", { kind: "constructor" });
         var propertiesGetter = ast.getMethodDefinition("properties", { kind: "get", static: true });
 
         if (propertiesGetter !== null)
             return;
 
-        var assignments = parsed.properties.map(this.createPropertyGetterAST);
+        var assignments = parsed.elementProperties.map(this.createPropertyGetterAST);
 
         var funcAst = b.methodDefinition(
             "get",
@@ -286,13 +288,13 @@ export default class LitCompiler {
      * -Initializing default property values
      * -Renaming user-defined constructor() and calling it at the end of constructor()
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     injectConstructor(ast, parsed) {
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
         var constructor = ast.getMethodDefinition("constructor", { kind: "constructor" });
 
-        var assignments = parsed.properties.map(this.createPropertyConstructorAST);
+        var assignments = parsed.elementProperties.map(this.createPropertyConstructorAST);
 
         if (constructor !== null) {
             constructor.node.kind = "method";
@@ -339,7 +341,7 @@ export default class LitCompiler {
 
     /**
      * Create an AST that represents a basic `this.foo = bar;` call.
-     * @param {*} property 
+     * @param {ParsedLitfile} property 
      */
     createPropertyConstructorAST(property) {
         var defaultVal = property.default;
@@ -354,7 +356,7 @@ export default class LitCompiler {
      * Creates an AST that represents a property in the object returned by `properties()`
      * 
      * This represents the `key: { value }` for a property, where key is the name of a top-level property defined in the class
-     * @param {*} property 
+     * @param {ParsedLitfile} property 
      */
     createPropertyGetterAST(property) {
         var keys = {
@@ -399,10 +401,10 @@ export default class LitCompiler {
      * Ensures that the class is exported by name, and forces it to be the default export if there are no other exports.
      * 
      * @param {ASTHelper} ast 
-     * @param {*} parsed 
+     * @param {ParsedLitfile} parsed 
      */
     fixExports(ast, parsed) {
-        var elemClass = ast.getClassDeclaration(parsed.element.type);
+        var elemClass = ast.getClassDeclaration(parsed.elementType);
         var exports = ast.getAllNodes(["ExportDeclaration", "ExportDefaultDeclaration", "ExportNamedDeclaration"]);
         var defaultExport = ast.getBreadthFirstNode("ExportDefaultDeclaration");
 
@@ -412,7 +414,7 @@ export default class LitCompiler {
             if (!exported.node.declaration)
                 continue;
 
-            if (exported.node.declaration.id.name !== parsed.element.type)
+            if (exported.node.declaration.id.name !== parsed.elementType)
                 continue;
 
             exportingClass = true;
@@ -432,5 +434,20 @@ export default class LitCompiler {
                 b.exportDeclaration(!defaultExport, elemClass.node)
             );
         }
+    }
+}
+
+export class CompiledLitfile extends SplitLitfile {
+    constructor(parsedFile) {
+        super(parsedFile.source.hash);
+        this.parsed = parsedFile;
+    }
+}
+
+export class LitfileParsedPart {
+    constructor(name, data, sourcePart) {
+        this.name = name;
+        this.value = data;
+        this.source = sourcePart;
     }
 }
