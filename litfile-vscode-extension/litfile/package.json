@@ -2,7 +2,7 @@
     "name": "litfile",
     "displayName": "litfile",
     "description": "Adds support for .lit files in VSCode",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "publisher": "geel",
     "repository": "https://github.com/geel9/litfile/tree/master/litfile-vscode-extension/litfile",
     "engines": {
